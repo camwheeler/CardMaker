@@ -16,6 +16,7 @@ namespace CardMaker.Implementations {
             var cards = new List<MagickImage>();
             foreach (var card in deck.Cards) {
                 var image = new MagickImage(new MagickColor("WhiteSmoke"), deck.Width, deck.Height);
+                image.Density = new MagickGeometry(300, 300);
                 image.Format = MagickFormat.Bmp;
                 foreach (var element in deck.Elements) {
                     var data = card.ElementData[element.Key];
@@ -25,9 +26,12 @@ namespace CardMaker.Implementations {
                         }
                     } else {
                         using (var textImage = new MagickImage(MagickColor.Transparent, deck.Width, deck.Height)) {
+                            textImage.Density = new MagickGeometry(300, 300);
                             textImage.Font = "Arial";
+                            textImage.FontPointsize = 12;
                             textImage.FillColor = new MagickColor("Black");
-                            textImage.Draw(new DrawableText(element.Value.X, element.Value.Y, data));
+                            var drawableText = new DrawableText(element.Value.X, element.Value.Y, data);
+                            textImage.Draw(drawableText);
                             image.Composite(textImage, CompositeOperator.Over);
                         }
                     }
@@ -39,13 +43,18 @@ namespace CardMaker.Implementations {
             using (var doc = new Document()) {
                 PdfWriter.GetInstance(doc, new FileStream(@"C:\temp\CardMaker\cards.pdf", FileMode.Create));
                 doc.Open();
-                doc.NewPage();
-                var table = new PdfPTable((int)Math.Floor(612d / (deck.Width + 10)));
+                var columns = (int)Math.Floor(doc.PageSize.Width / (deck.Width + 10));
+                var table = new PdfPTable(columns) { WidthPercentage = 100, DefaultCell = { Border = 0, Padding = 5 } };
 
-                table.DefaultCell.Border = 0;
-                table.DefaultCell.Padding = 5;
                 foreach (var card in cards) {
-                    table.AddCell(Image.GetInstance(card.ToByteArray()));
+                    var instance = Image.GetInstance(card.ToByteArray());
+                    instance.SetDpi(300, 300);
+                    var cell = new PdfPCell(instance) {
+                        HorizontalAlignment = Element.ALIGN_CENTER,
+                        Border = 0,
+                        Padding = 5,
+                    };
+                    table.AddCell(cell);
                 }
                 table.CompleteRow();
                 doc.Add(table);
