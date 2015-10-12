@@ -15,7 +15,7 @@ namespace CardMaker
             using (var scope = container.BeginLifetimeScope())
             {
                 var maker = scope.Resolve<IMakeCards>();
-                maker.SampleCard();
+                //maker.SampleCard();
                 maker.MakeCards();
             }
         }
